@@ -15,7 +15,7 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<ClinicUser | null>(null);
   const [clinic, setClinic] = useState<Clinic | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadUserData = async (email: string) => {
     try {
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       setClinic(clinicData);
       localStorage.setItem('userEmail', email);
+      setLoading(false);
     } catch (error) {
       console.error('Error loading user data:', error);
       throw error;
@@ -70,7 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedEmail) {
       loadUserData(storedEmail).catch(() => {
         localStorage.removeItem('userEmail');
+        setLoading(false);
       });
+    } else {
+      setLoading(false);
     }
   }, []);
 
