@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, Clock, ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClinicBalance, FinancialTransaction } from '@/types/database';
+import { getBalanceByClinic, getTransactionsByClinic } from '@/lib/mockData';
 
 export default function WalletPage() {
   const { clinic } = useAuth();
@@ -17,15 +17,14 @@ export default function WalletPage() {
   const loadFinancialData = async () => {
     if (!clinic) return;
     setLoading(true);
-    try {
-      const { data: balanceData } = await supabase.from('clinic_balance').select('*').eq('clinic_id', clinic.id).maybeSingle();
-      if (balanceData) setBalance(balanceData);
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-      const { data: txData } = await supabase.from('financial_transactions').select('*').eq('clinic_id', clinic.id).order('created_at', { ascending: false }).limit(20);
-      if (txData) setTransactions(txData);
-    } finally {
-      setLoading(false);
-    }
+    const balanceData = getBalanceByClinic(clinic.id);
+    setBalance(balanceData);
+
+    const txData = getTransactionsByClinic(clinic.id);
+    setTransactions(txData);
+    setLoading(false);
   };
 
   const formatCurrency = (value: number) => `R$ ${(value / 100).toFixed(2).replace('.', ',')}`;

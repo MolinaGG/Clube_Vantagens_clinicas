@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Eye, EyeOff, MapPin, DollarSign } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClinicAd } from '@/types/database';
+import { getAdsByClinic } from '@/lib/mockData';
 
 export default function AdsPage() {
   const { clinic } = useAuth();
@@ -16,16 +16,14 @@ export default function AdsPage() {
   const loadAds = async () => {
     if (!clinic) return;
     setLoading(true);
-    try {
-      const { data } = await supabase.from('clinic_ads').select('*').eq('clinic_id', clinic.id).order('created_at', { ascending: false });
-      setAds(data || []);
-    } finally {
-      setLoading(false);
-    }
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const data = getAdsByClinic(clinic.id);
+    setAds(data);
+    setLoading(false);
   };
 
-  const toggleAdStatus = async (adId: string, currentStatus: boolean) => {
-    await supabase.from('clinic_ads').update({ active: !currentStatus }).eq('id', adId);
+  const toggleAdStatus = (adId: string, currentStatus: boolean) => {
     setAds(ads.map(ad => ad.id === adId ? { ...ad, active: !currentStatus } : ad));
   };
 

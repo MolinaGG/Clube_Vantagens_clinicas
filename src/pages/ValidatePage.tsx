@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { QrCode, CheckCircle, XCircle, Search, User, Calendar, Clock } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Appointment } from '@/types/database';
+import { findAppointmentById, MOCK_APPOINTMENTS } from '@/lib/mockData';
 
 export default function ValidatePage() {
   const { clinic } = useAuth();
@@ -17,19 +17,12 @@ export default function ValidatePage() {
 
   const loadRecentValidations = async () => {
     if (!clinic) return;
-    try {
-      const { data } = await supabase
-        .from('appointments')
-        .select('*, service:services(*)')
-        .eq('clinic_id', clinic.id)
-        .eq('status', 'completed')
-        .order('updated_at', { ascending: false })
-        .limit(5);
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-      if (data) setRecentValidations(data);
-    } catch (error) {
-      console.error('Error loading validations:', error);
-    }
+    const completed = MOCK_APPOINTMENTS.filter(a =>
+      a.clinic_id === clinic.id && a.status === 'completed'
+    ).slice(0, 5);
+    setRecentValidations(completed);
   };
 
   const searchAppointment = async () => {
@@ -37,50 +30,24 @@ export default function ValidatePage() {
 
     setLoading(true);
     setAppointment(null);
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    try {
-      const { data } = await supabase
-        .from('appointments')
-        .select('*, service:services(*)')
-        .eq('clinic_id', clinic.id)
-        .eq('id', searchCode.trim())
-        .maybeSingle();
-
-      if (data) {
-        setAppointment(data);
-      } else {
-        alert('Agendamento não encontrado');
-      }
-    } catch (error) {
-      console.error('Error searching appointment:', error);
-      alert('Erro ao buscar agendamento');
-    } finally {
-      setLoading(false);
+    const data = findAppointmentById(searchCode.trim());
+    if (data && data.clinic_id === clinic.id) {
+      setAppointment(data);
+    } else {
+      alert('Agendamento não encontrado');
     }
+    setLoading(false);
   };
 
-  const validateAppointment = async () => {
+  const validateAppointment = () => {
     if (!appointment) return;
 
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', appointment.id);
-
-      if (error) throw error;
-
-      alert('Agendamento validado com sucesso!');
-      setAppointment({ ...appointment, status: 'completed' });
-      loadRecentValidations();
-      setSearchCode('');
-    } catch (error) {
-      console.error('Error validating:', error);
-      alert('Erro ao validar agendamento');
-    }
+    alert('Agendamento validado com sucesso!');
+    setAppointment({ ...appointment, status: 'completed' });
+    loadRecentValidations();
+    setSearchCode('');
   };
 
   const formatCurrency = (value: number) => `R$ ${(value / 100).toFixed(2).replace('.', ',')}`;

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, User } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Appointment } from '@/types/database';
+import { getAppointmentsByClinicAndDate } from '@/lib/mockData';
 
 export default function AgendaPage() {
   const { clinic } = useAuth();
@@ -17,21 +17,12 @@ export default function AgendaPage() {
   const loadAppointments = async () => {
     if (!clinic) return;
     setLoading(true);
-    try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const { data } = await supabase
-        .from('appointments')
-        .select('*, service:services(*)')
-        .eq('clinic_id', clinic.id)
-        .eq('appointment_date', dateStr)
-        .order('appointment_time');
-      
-      setAppointments(data || []);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const data = getAppointmentsByClinicAndDate(clinic.id, dateStr);
+    setAppointments(data);
+    setLoading(false);
   };
 
   const formatCurrency = (value: number) => `R$ ${(value / 100).toFixed(2).replace('.', ',')}`;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, Plus, Trash2, Calendar } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { getSlotsByClinicAndDate } from '@/lib/mockData';
 
 interface AvailableSlot {
   id: string;
@@ -26,87 +26,52 @@ export default function AvailabilityPage() {
   const loadSlots = async () => {
     if (!clinic) return;
     setLoading(true);
-    try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const { data } = await supabase
-        .from('available_slots')
-        .select('*')
-        .eq('clinic_id', clinic.id)
-        .eq('date', dateStr)
-        .order('time_slot');
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-      setSlots(data || []);
-    } catch (error) {
-      console.error('Error loading slots:', error);
-    } finally {
-      setLoading(false);
-    }
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const data = getSlotsByClinicAndDate(clinic.id, dateStr);
+    setSlots(data);
+    setLoading(false);
   };
 
-  const addSlot = async () => {
+  const addSlot = () => {
     if (!clinic || !newSlot.time) return;
 
-    try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('available_slots')
-        .insert({
-          clinic_id: clinic.id,
-          date: dateStr,
-          time_slot: newSlot.time,
-          capacity: newSlot.capacity,
-          booked: 0
-        })
-        .select()
-        .single();
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const newSlotData = {
+      id: `slot-${Date.now()}`,
+      clinic_id: clinic.id,
+      date: dateStr,
+      time_slot: newSlot.time,
+      capacity: newSlot.capacity,
+      booked: 0
+    };
 
-      if (error) throw error;
-      if (data) {
-        setSlots([...slots, data]);
-        setNewSlot({ time: '', capacity: 1 });
-      }
-    } catch (error: any) {
-      alert('Erro ao adicionar horário: ' + error.message);
-    }
+    setSlots([...slots, newSlotData].sort((a, b) => a.time_slot.localeCompare(b.time_slot)));
+    setNewSlot({ time: '', capacity: 1 });
   };
 
-  const deleteSlot = async (slotId: string) => {
+  const deleteSlot = (slotId: string) => {
     if (!confirm('Deseja realmente remover este horário?')) return;
-
-    try {
-      await supabase.from('available_slots').delete().eq('id', slotId);
-      setSlots(slots.filter(s => s.id !== slotId));
-    } catch (error) {
-      console.error('Error deleting slot:', error);
-    }
+    setSlots(slots.filter(s => s.id !== slotId));
   };
 
-  const generateDefaultSlots = async () => {
+  const generateDefaultSlots = () => {
     if (!clinic) return;
 
     const defaultTimes = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
     const dateStr = selectedDate.toISOString().split('T')[0];
 
-    try {
-      const newSlots = defaultTimes.map(time => ({
-        clinic_id: clinic.id,
-        date: dateStr,
-        time_slot: time,
-        capacity: 3,
-        booked: 0
-      }));
+    const newSlots = defaultTimes.map((time, index) => ({
+      id: `slot-${Date.now()}-${index}`,
+      clinic_id: clinic.id,
+      date: dateStr,
+      time_slot: time,
+      capacity: 3,
+      booked: 0
+    }));
 
-      const { data } = await supabase
-        .from('available_slots')
-        .insert(newSlots)
-        .select();
-
-      if (data) {
-        setSlots(data);
-      }
-    } catch (error) {
-      console.error('Error generating slots:', error);
-    }
+    setSlots(newSlots);
   };
 
   return (

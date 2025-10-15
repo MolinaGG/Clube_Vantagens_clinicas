@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { ClinicUser, Clinic } from '@/types/database';
+import { findUserByEmail, findClinicById } from '@/lib/mockData';
 
 interface AuthContextData {
   user: ClinicUser | null;
@@ -18,33 +18,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadUserData = async (email: string) => {
-    try {
-      const { data: userData, error: userError } = await supabase
-        .from('clinic_users')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (userError) throw userError;
-      if (!userData) throw new Error('Usuário não encontrado');
+    const userData = findUserByEmail(email);
+    if (!userData) throw new Error('Usuário não encontrado');
 
-      const { data: clinicData, error: clinicError } = await supabase
-        .from('clinics')
-        .select('*')
-        .eq('id', userData.clinic_id)
-        .maybeSingle();
+    const clinicData = findClinicById(userData.clinic_id);
+    if (!clinicData) throw new Error('Clínica não encontrada');
 
-      if (clinicError) throw clinicError;
-      if (!clinicData) throw new Error('Clínica não encontrada');
-
-      setUser(userData);
-      setClinic(clinicData);
-      localStorage.setItem('userEmail', email);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error loading user data:', error);
-      throw error;
-    }
+    setUser(userData);
+    setClinic(clinicData);
+    localStorage.setItem('userEmail', email);
+    setLoading(false);
   };
 
   const signIn = async (email: string) => {
